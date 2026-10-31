@@ -15,10 +15,6 @@ Buka http://localhost:8000 (publik) dan http://localhost:8000/admin.php (admin).
 
 Hosting (cPanel/shared hosting): upload seluruh folder, pastikan folder `database/` bisa ditulis oleh PHP (chmod 775). File `.htaccess` di `database/` dan `inc/` memblokir akses langsung (Apache). Untuk Nginx, tambahkan `location ~ ^/(database|inc)/ { deny all; }`.
 
-## Login admin
-
-Password default: `admin1234` — ganti di menu **Pengaturan** setelah login.
-
 ## Data awal
 
 Saat pertama dibuka, `database/kuota.sqlite` dibuat otomatis lalu diisi dari `database/seed.sql` (hasil migrasi `Kuota_Member_Sabtu.xlsx` per 30 Okt 2026, termasuk pembayaran Erlina 27 Okt). Untuk reset ke data awal, hapus `database/kuota.sqlite`.
