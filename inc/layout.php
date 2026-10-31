@@ -8,7 +8,7 @@ function layout_start(string $title, string $active = ''): void
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($title) ?> · <?= e(APP_NAME) ?></title>
-<link rel="stylesheet" href="assets/style.css?v=1">
+<link rel="stylesheet" href="assets/style.css?v=2">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23c8e64a'/><path d='M6 9c6 4 14 4 20 0M6 23c6-4 14-4 20 0' stroke='%23163a2c' stroke-width='2' fill='none'/></svg>">
 </head>
 <body>
@@ -20,7 +20,9 @@ function layout_start(string $title, string $active = ''): void
         <a href="admin.php" class="nav-admin">Admin</a>
       <?php else: ?>
         <a href="index.php">Lihat kuota</a>
-        <?php if (is_admin()): ?><a href="admin.php?logout=1">Keluar</a><?php endif; ?>
+        <?php if (is_admin()): ?>
+          <form method="post" action="admin.php" class="inline"><?= csrf_field() ?><input type="hidden" name="action" value="logout"><button class="nav-link">Keluar</button></form>
+        <?php endif; ?>
       <?php endif; ?>
     </nav>
   </div>

@@ -6,9 +6,24 @@ date_default_timezone_set('Asia/Jakarta');
 const APP_NAME = 'Kuota Member Padel Sabtu';
 const DEFAULT_ADMIN_PASSWORD = 'admin1234';
 define('DB_PATH', __DIR__ . '/../database/kuota.sqlite');
+const LOGIN_MAX_FAILS = 5;
+const LOGIN_LOCK_SECONDS = 900;
+
+$https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
+
+// Pages use inline <script> and on* handlers, so scripts/styles need 'unsafe-inline'.
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'");
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: same-origin');
+if ($https) {
+    header('Strict-Transport-Security: max-age=31536000');
+}
 
 if (session_status() === PHP_SESSION_NONE) {
-    session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
+    ini_set('session.use_strict_mode', '1');
+    session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax', 'secure' => $https]);
     session_start();
 }
 
@@ -139,6 +154,27 @@ function tgl(?string $d, bool $short = false): string
 function is_admin(): bool
 {
     return !empty($_SESSION['admin']);
+}
+
+/** Seconds until this IP may try to log in again; 0 when not locked. */
+function login_locked(string $ip): int
+{
+    $since = time() - LOGIN_LOCK_SECONDS;
+    db()->prepare('DELETE FROM login_attempts WHERE at < ?')->execute([$since]);
+    $st = db()->prepare('SELECT COUNT(*), MIN(at) FROM login_attempts WHERE ip = ?');
+    $st->execute([$ip]);
+    [$fails, $first] = $st->fetch(PDO::FETCH_NUM);
+    return (int) $fails >= LOGIN_MAX_FAILS ? max(1, (int) $first + LOGIN_LOCK_SECONDS - time()) : 0;
+}
+
+function login_failed(string $ip): void
+{
+    db()->prepare('INSERT INTO login_attempts(ip, at) VALUES(?, ?)')->execute([$ip, time()]);
+}
+
+function login_cleared(string $ip): void
+{
+    db()->prepare('DELETE FROM login_attempts WHERE ip = ?')->execute([$ip]);
 }
 
 function csrf_token(): string

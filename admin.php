@@ -7,23 +7,26 @@ $pdo = db();
 $p = $_GET['p'] ?? 'dashboard';
 
 // ---------- auth ----------
-if (isset($_GET['logout'])) {
-    unset($_SESSION['admin']);
-    flash('Anda sudah keluar.');
-    redirect('admin.php');
-}
-
 if (!is_admin()) {
     $err = null;
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'logout') {
+        redirect('admin.php'); // session already expired
+    }
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         csrf_check();
-        if (password_verify($_POST['password'] ?? '', setting('admin_password', ''))) {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        if ($wait = login_locked($ip)) {
+            $err = 'Terlalu banyak percobaan gagal. Coba lagi dalam ' . ceil($wait / 60) . ' menit.';
+        } elseif (password_verify($_POST['password'] ?? '', setting('admin_password', ''))) {
+            login_cleared($ip);
             session_regenerate_id(true);
             $_SESSION['admin'] = true;
             redirect('admin.php');
+        } else {
+            login_failed($ip);
+            $err = 'Password salah.';
+            usleep(400000);
         }
-        $err = 'Password salah.';
-        usleep(400000);
     }
     layout_start('Login admin');
     ?>
@@ -51,6 +54,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     };
 
     switch ($a) {
+        case 'logout':
+            unset($_SESSION['admin']);
+            session_regenerate_id(true);
+            flash('Anda sudah keluar.');
+            redirect('admin.php');
+
         case 'payment_save':
             $id = (int) ($_POST['id'] ?? 0);
             $date = valid_date($_POST['paid_at'] ?? '');

@@ -53,3 +53,11 @@ CREATE TABLE IF NOT EXISTS transactions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(tx_date);
+
+-- Failed admin logins, for per-IP lockout (rows older than the lock window are purged).
+CREATE TABLE IF NOT EXISTS login_attempts (
+    ip TEXT    NOT NULL,
+    at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_login_attempts_ip ON login_attempts(ip);
